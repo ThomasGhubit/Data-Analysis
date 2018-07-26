@@ -32,3 +32,232 @@ def select_data(sql, dict_data=True, host='219.224.25.21', port=3306, database='
             return results
     except Exception as e:
         return e
+
+def get_course(url):
+    stay = re.findall(pattern='(courses|courses/)$', string=url)
+    split_words = re.split('/|\?|&|\=', url)
+    if len(stay) > 0:
+        return 'courses'
+    else:
+        level2_words = ['courseware', 'discussion', 'wiki', 'progress', 'pdfbook', 'classmates',
+                        'search', 'about', 'info', 'exams', 'open_ended_notifications', 'open_ended_problems',
+                        'fragment', 'instructor', 'exam', 'legacy_instructor_dash', 'staff_grading', 'information',
+                        'resources', 'syllabus']
+        #         print(split_words)
+        condition_words = ['credential', 'page_type', 'cid', 'process', 'org', 'course_mode', 'spam', 't', 'redential']
+
+        for word in split_words:
+            if word in level2_words:
+                return word
+            elif word in condition_words:
+                return 'condition search'
+        if len(split_words[-2]) == 32:
+            return 'other info'
+    return 'view announcement'
+
+def get_dashboard(url):
+    stay = re.findall(pattern='(dashboard|dashboard/)$', string=url)
+    split_words = re.split('/|\?|&|\=|_', url)
+    if len(stay) > 0:
+        return 'dashboard'
+    elif len(re.findall(pattern='dashboard/\d+', string=url)) > 0:
+        return 'some_one_dashboard'
+    else:
+        level2_words = ['message', 'account', 'messages', 'honor', 'discussion', 'relation',
+                        'coupon', 'course', 'major', 'email_active', 'slip', 'invitees',
+                        'coupons', ]
+        condition_words = ['t', 'spam']
+        for word in split_words:
+            if word in level2_words:
+                return word
+            elif word in condition_words:
+                return 'condition dashboard'
+    return 'view dashboard'
+
+def get_community(url):
+    stay = re.findall(pattern='(community|community/)$', string=url)
+    split_words = re.split('/|\?|&|\=|_', url)
+    if len(stay) > 0:
+        return 'community'
+    else:
+        level2_words = ['category', 'post', 'tag']
+        condition_words = ['spam', 't']
+        for word in split_words:
+            if word in level2_words:
+                return word
+            elif word in condition_words:
+                return 'condition community'
+    return 'view dashboard'
+
+def get_event(url):
+    stay = re.findall(pattern='(event|event/)$', string=url)
+    split_words = re.split('/|\?|&|\=|%', url)
+    #     print(split_words)
+    if len(stay) > 0:
+        return 'event'
+    else:
+        level2_words = ['certificatemode', 'xuetangxsay', 'yuketangfabu', 'xiaoxing',
+                        'xuetangxsay01', 'taiwanqinghua', 'school_TV', 'peopletime',
+                        'yinxiang', 'computer', 'zhouqiren', 'summer2017', 'zhaomuapply',
+                        'politicalcourse', 'yuxinjie_live', 'Creditcourse2017', 'summercollege',
+                        'apcourse', 'xuetangxsayterm', 'xuefenke_bixiuke', 'xiehuihe', 'dxyy',
+                        'JoinUs', 'peerinstruction', 'summer2017_award', 'liangjianzhang', 'tsinghua_tejiang']
+        #         level2_words = []
+        condition_words = ['spam', 't_t_t', 'term', 't']
+        if len(split_words[-1]) == 32:
+            return 'view other event'
+        for word in split_words:
+            if word in level2_words:
+                return word
+            elif word in condition_words:
+                return 'condition event'
+    return split_words[1]
+
+def get_normol_level(word, url):
+    pattern = '({}|{}/)$'.format(word, word)
+    stay = re.findall(pattern=pattern, string=url)
+    split_words = re.split('/|\?|&|\=|%', url)
+    #     print(split_words)
+    if len(stay) > 0:
+        return word
+    #     print(split_words)
+    if len(split_words[4]) == 32:
+        return word + '_hash'
+    if word == 'commercial':
+        return split_words[5]
+    pattern = r'course-v1.*?'
+    res = re.findall(pattern=pattern, string=split_words[4])
+    if len(res) > 0:
+        return 'someone_course'
+    #     print(split_words,word)
+    # print(url)
+    # print(split_words)
+    return split_words[1]
+
+def apply_level_2(l1, url):
+    if l1 == 'view main_url':
+        return l1
+    if l1 == 'courses':
+        return get_course(url)
+    elif l1 == 'dashboard':
+        return get_dashboard(url)
+    elif l1 == 'community':
+        return get_community(url)
+    elif l1 == 'event':
+        return get_event(url)
+    elif l1 == 'ERROR_URL' or l1 is None:
+        return l1
+    else:
+        try:
+            return get_normol_level(l1, url)
+        except:
+            return l1
+    return l1
+
+def get_discussion(url):
+    pattern = r'discussion.*'
+    res = re.findall(pattern=pattern, string=url)
+    res_list = re.split('/|\?|=', res[0])
+    if res_list[-1] == 'forum' or res_list[-1] == 'discussion':
+        return 'view discussion'
+    if res_list[2][:3] == 'i4x':
+        return 'view top post'
+    if len(res_list[2]) == 32:
+        return 'view one post'
+    if res_list[2] == 'users':
+        return 'view post_user info'
+    if res_list[2] == 'course':
+        return 'view course post'
+    if res_list[2] == 'spam':
+        return 'view discussion'
+    return 'view one post'
+
+def get_community_post(word, url):
+    pattern = r'{}/(\d+)'.format(word)
+    res = re.findall(pattern=pattern, string=url)
+    if word == 'post':
+        if len(res) > 0:
+            return 'view one community discussion'
+        return 'add one community discussion'
+    if word == 'progress':
+        return 'view course progress'
+
+def get_community_category(url):
+    pattern = r'category.*'
+    res = re.findall(pattern=pattern, string=url)
+    res_list = re.split('/|\?|=', res[0])
+    if len(res_list) > 1:
+        return 'view ' + res_list[1]
+    return 'view category'
+
+def apply_level_3(l1, l2, url):
+    if l2 == 'discussion' and l1 == 'courses':
+        return get_discussion(url)
+    if l2 == 'courseware' and l1 == 'courses':
+        return 'study course'
+    if l2 == 'post' and l1 == 'community':
+        return get_community_post('post', url)
+    if l2 == 'progress' and l1 == 'courses':
+        return get_community_post('progress', url)
+    if l2 == 'category' and l1 == 'community':
+        return get_community_category(url)
+    if l2 is None:
+        #         print(url)
+        return l2
+    return 'view ' + l2
+
+def map_level_1(s):
+    res = re.findall(pattern='xuetangx.com/(.*?)/', string=s)
+    if res:
+        # print(s)
+        return res[0]
+    res_list = re.split('[?/]', s)
+    # if res_list[0] == 'https:':
+    #     print(s)
+    return res_list[0]
+
+def map_chapter_seq(s, i=1):
+    res = re.findall(pattern='courseware/.{32}?/.{32}?/', string=s)
+    if res:
+        res_list = res[0].split('/')
+        return res_list[i]
+    return 'None'
+
+def get_update_df(data):
+    data_df = pd.DataFrame(data)
+    data_df = data_df[data_df['url'] != 'None']
+    data_df['level_1'] = data_df['url'].map(map_level_1)
+    data_df['behavior'] = data_df.apply(lambda x: apply_level_2(x.level_1, x.url), axis=1)
+    data_df['chapter_id'] = data_df['url'].map(map_chapter_seq)
+    seq_fun = partial(map_chapter_seq, i=2)
+    data_df['seq_id'] = data_df['url'].map(seq_fun)
+    return data_df
+
+if __name__ == '__main__':
+    sql1 = 'select * from xuetangx_180724_log_rate_A_copy'
+    data_url = select_data(sql1)
+    df = get_update_df(data_url)
+    n = 0
+    update_base_sql = '''update xuetangx_180724_log_rate_A_copy set behavior= %s,chapter_id=%s,seq_id=%s where id=%s '''
+#     update_base_sql = '''update xuetangx_180724_log_rate_A_copy set behavior={},chapter_id={},seq_id={} where id={} '''
+    print('start update')
+    conn_update = connect(host='219.224.25.21',
+                port=3306, database='xuetang', user='root', password='lapass', charset='utf8', cursorclass=cursors.DictCursor,)
+    update_data_list = []
+    for i in df.iterrows():
+        d = i[1]
+        update_data_list.append((d['behavior'], d['chapter_id'], d['seq_id'], d['id']))
+
+    try:
+        with conn_update.cursor() as cur_update:
+            cur_update.executemany(update_base_sql,update_data_list)
+            conn_update.commit()
+    except Exception as e:
+        print(e)
+
+#         update_sql = update_base_sql.format(d['behavior'], d['chapter_id'], d['seq_id'], d['id'])
+#         select_data(update_sql,host='219.224.25.21',port=3306,database='xuetang',user='root',password='lapass')
+#         n += 1
+#         if n % 5000 == 0:
+#             print('已经更新了{}条信息了'.format(n))
+print('finish update')
