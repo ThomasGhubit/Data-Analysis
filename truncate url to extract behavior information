@@ -1,0 +1,34 @@
+from pymysql import *
+import pandas as pd
+import re
+#from map_fun import *
+from functools import partial
+
+def select_data(sql, dict_data=True, host='219.224.25.21', port=3306, database='xuetang', user='root',password='lapass'):
+    try:
+        if dict_data:
+            conn = connect(host=host,
+                           port=port,
+                           database=database,
+                           user=user,
+                           password=password,
+                           charset='utf8',
+                           cursorclass=cursors.DictCursor,
+                           )
+        else:
+            conn = connect(host=host,
+                           port=port,
+                           database=database,
+                           user=user,
+                           password=password,
+                           charset='utf8',
+                           # cursorclass=cursors.DictCursor,
+                           )
+
+        with conn.cursor() as cur:
+            cur.execute(sql)
+            results = cur.fetchall()
+            conn.commit()
+            return results
+    except Exception as e:
+        return e
